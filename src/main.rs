@@ -181,6 +181,17 @@ impl Application for NotPad {
                 if let Ok(path) = result {
                     let tab = self.content.get_mut(&path.0).unwrap();
                     tab.is_dirty = false;
+                    tab.name = path
+                        .1
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                        .split('.')
+                        .next()
+                        .unwrap()
+                        .to_string();
                     tab.file_path = Some(path.1);
                 }
 
@@ -295,7 +306,7 @@ async fn save_file(
     path: Option<PathBuf>,
     contents: String,
 ) -> Result<(String, PathBuf), Error> {
-    let path = if let Some(path) = path {
+    let mut path = if let Some(path) = path {
         path
     } else {
         rfd::AsyncFileDialog::new()
@@ -306,6 +317,10 @@ async fn save_file(
             .map(Path::to_owned)
             .ok_or(Error::DialogClosed)?
     };
+
+    if path.extension().is_none() {
+        path.set_extension("notpad");
+    }
 
     tokio::fs::write(&path, contents)
         .await
